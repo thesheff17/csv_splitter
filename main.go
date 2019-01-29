@@ -89,7 +89,7 @@ func main() {
 	process_lines := 0
 	line_num := 0
 	file_num := 1
-	threshold := 5
+	threshold := 2000000
 
 	// first file we are going to write to.
 	filename := prefix + getFileName(file_num) + ".csv.gz"
