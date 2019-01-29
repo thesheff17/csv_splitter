@@ -24,7 +24,7 @@
 // This program will take a csv file and split it based on X number of lines
 // This assumes you have a header row
 // It will also compress them using gzip best compression.
-// 2,000,000 million line is approximately 250MB compressed
+// 2,000,000 million lines is approximately 250MB compressed
 
 // Usage:
 // go build main.go
@@ -42,7 +42,7 @@ import (
 	"time"
 )
 
-// Need this as a global since I'm going to add the header row to every file
+// Need this as a global since I'm going to add the header row to every new file
 var toprow string
 
 func check(e error) {
