@@ -36,6 +36,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -43,7 +44,7 @@ import (
 )
 
 // Need this as a global since I'm going to add the header row to every new file
-var toprow string
+var toprow []byte
 
 func check(e error) {
 	if e != nil {
@@ -84,75 +85,86 @@ func main() {
 
 	defer file1.Close()
 
-	scanner := bufio.NewScanner(file1)
+	// this breaks with too many lines
+	//bufio.Scanner: token too long
+	//scanner := bufio.NewScanner(file1)
+	reader := bufio.NewReader(file1)
 
-	process_lines := 0
-	line_num := 0
-	file_num := 1
+	processLines := 0
+	lineNum := 0
+	fileNum := 1
 	threshold := 2000000
 
+	endOfLine := "\n"
+	var newline []byte
+
 	// first file we are going to write to.
-	filename := prefix + getFileName(file_num) + ".csv.gz"
+	filename := prefix + getFileName(fileNum) + ".csv.gz"
 	f, err := os.Create(filename)
 	check(err)
 
 	// create a new buffer.
 	// Only do this once otherwise you will have problems
-	w, e := gzip.NewWriterLevel(f, gzip.BestCompression)
-	check(e)
+	w := gzip.NewWriter(f)
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		line, _, err := reader.ReadLine()
 
-		if line_num == 0 {
+		//break out of loop at end of file
+		if err == io.EOF {
+			break
+		}
+
+		if lineNum == 0 {
 			toprow = line
 			//fmt.Println(toprow)
-			_, err = w.Write([]byte(toprow + "\n"))
+			newline = append(toprow, endOfLine...)
+			_, err = w.Write(newline)
 			check(err)
 		}
 
-		if line_num > threshold {
-			line_num = 0
-			file_num++
+		if lineNum > threshold {
+			lineNum = 0
+			fileNum++
 
 			// write to disk and close
 			w.Flush()
 			w.Close()
 
 			// new file
-			filename := prefix + getFileName(file_num) + ".csv.gz"
+			filename := prefix + getFileName(fileNum) + ".csv.gz"
 			f, err := os.Create(filename)
 			check(err)
 
 			// reset the buffer
 			w.Reset(f)
 
-			//fmt.Println(prefix + strconv.Itoa(file_num) + ".csv")
-			_, err = w.Write([]byte(toprow + "\n"))
+			//fmt.Println(prefix + strconv.Itoa(fileNum) + ".csv")
+			newline = append(toprow, endOfLine...)
+			_, err = w.Write(newline)
 			check(err)
-			_, err = w.Write([]byte(line + "\n"))
+			newline = append(line, endOfLine...)
+			_, err = w.Write(newline)
 			check(err)
 
 			//some output during the process
-			fmt.Println("Processed: " + strconv.Itoa(process_lines - 1) + " lines with headers...")
-		} else if line_num != 0 {
-			_, err := w.Write([]byte(line + "\n"))
+			fmt.Println("Processed: " + strconv.Itoa(processLines-1) + " lines with headers...")
+		} else if lineNum != 0 {
+			newline = append(line, endOfLine...)
+			_, err := w.Write([]byte(newline))
 			check(err)
 		}
 
-		line_num++
-		process_lines++
+		lineNum++
+		processLines++
 	}
 
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
 	// write to disk and close
 	w.Flush()
 	w.Close()
 
 	elapsed := time.Since(start)
-	fmt.Println("This script processed: " + strconv.Itoa(process_lines-1) + " lines")
+	fmt.Println("This script processed: " + strconv.Itoa(processLines-1) + " lines")
 	log.Printf("Took %s", elapsed)
 
 }
