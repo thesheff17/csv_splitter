@@ -78,7 +78,7 @@ func main() {
 	processLines := 0
 	lineNum := 0
 	fileNum := 1
-	threshold := 5
+	threshold := 2000000
 
 	endOfLine := "\n"
 	var newline []byte
