@@ -53,22 +53,7 @@ func check(e error) {
 }
 
 func getFileName(e int) (filename string) {
-	value := strconv.Itoa(e)
-	length := len(value)
-
-	if length == 1 {
-		return "00000" + value
-	} else if length == 2 {
-		return "0000" + value
-	} else if length == 3 {
-		return "000" + value
-	} else if length == 4 {
-		return "00" + value
-	} else if length == 5 {
-		return "0" + value
-	} else {
-		return value
-	}
+	return fmt.Sprintf("%06d", e)
 }
 
 func main() {
@@ -93,10 +78,11 @@ func main() {
 	processLines := 0
 	lineNum := 0
 	fileNum := 1
-	threshold := 2000000
+	threshold := 5
 
 	endOfLine := "\n"
 	var newline []byte
+	newline2 := byte('\n')
 
 	// first file we are going to write to.
 	filename := prefix + getFileName(fileNum) + ".csv.gz"
@@ -108,7 +94,7 @@ func main() {
 	w := gzip.NewWriter(f)
 
 	for {
-		line, _, err := reader.ReadLine()
+		line, err := reader.ReadSlice(newline2)
 
 		//break out of loop at end of file
 		if err == io.EOF {
