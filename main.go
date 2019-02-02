@@ -24,11 +24,11 @@
 // This program will take a csv file and split it based on X number of lines
 // This assumes you have a header row
 // It will also compress them using gzip best compression.
-// 2,000,000 million lines is approximately 250MB compressed
+// 2,000,000 million lines is approximately 275MB compressed
 
 // Usage:
 // go build main.go
-// ./main file.csv prefix_
+// ./main example.csv prefix_ number_of_lines_to_split_on
 
 package main
 
@@ -78,10 +78,9 @@ func main() {
 	processLines := 0
 	lineNum := 0
 	fileNum := 1
-	threshold := 2000000
+	threshold, err := strconv.Atoi(os.Args[3])
+	check(err)
 
-	endOfLine := "\n"
-	var newline []byte
 	newline2 := byte('\n')
 
 	// first file we are going to write to.
@@ -94,7 +93,7 @@ func main() {
 	w := gzip.NewWriter(f)
 
 	for {
-		line, err := reader.ReadSlice(newline2)
+		line, err := reader.ReadBytes(newline2)
 
 		//break out of loop at end of file
 		if err == io.EOF {
@@ -104,8 +103,7 @@ func main() {
 		if lineNum == 0 {
 			toprow = line
 			//fmt.Println(toprow)
-			newline = append(toprow, endOfLine...)
-			_, err = w.Write(newline)
+			_, err = w.Write(line)
 			check(err)
 		}
 
@@ -126,18 +124,16 @@ func main() {
 			w.Reset(f)
 
 			//fmt.Println(prefix + strconv.Itoa(fileNum) + ".csv")
-			newline = append(toprow, endOfLine...)
-			_, err = w.Write(newline)
+			_, err = w.Write(toprow)
 			check(err)
-			newline = append(line, endOfLine...)
-			_, err = w.Write(newline)
+			_, err = w.Write(line)
 			check(err)
 
 			//some output during the process
-			fmt.Println("Processed: " + strconv.Itoa(processLines-1) + " lines with headers...")
+			elapsed := time.Since(start)
+			log.Printf("Processed: %d lines with headers elapsed %s.", processLines-1, elapsed)
 		} else if lineNum != 0 {
-			newline = append(line, endOfLine...)
-			_, err := w.Write([]byte(newline))
+			_, err := w.Write([]byte(line))
 			check(err)
 		}
 
@@ -150,7 +146,5 @@ func main() {
 	w.Close()
 
 	elapsed := time.Since(start)
-	fmt.Println("This script processed: " + strconv.Itoa(processLines-1) + " lines")
-	log.Printf("Took %s", elapsed)
-
+	log.Printf("Processed: %d lines with headers elapsed %s.", processLines-1, elapsed)
 }
