@@ -23,18 +23,20 @@
 
 // This program will take a csv file and split it based on X number of lines
 // This assumes you have a header row
-// It will also compress them using gzip best compression.
-// 2,000,000 million lines is approximately 275MB compressed
+// It will also compress them usingg gzip compression
+// 5,000,000 million lines is approximately 330MB compressed
+
 
 // Usage:
 // go build main.go
-// ./main example.csv prefix_ number_of_lines_to_split_on
+// ./main example.csv dest_directory prefix_ number_of_lines_to_split_on
 
 package main
 
 import (
 	"bufio"
-	"compress/gzip"
+	//"compress/gzip"
+	gzip "github.com/klauspost/pgzip"
 	"fmt"
 	"io"
 	"log"
@@ -53,7 +55,7 @@ func check(e error) {
 }
 
 func getFileName(e int) (filename string) {
-	return fmt.Sprintf("%06d", e)
+	return fmt.Sprintf("%s%06d", os.Args[3],  e)
 }
 
 func main() {
@@ -78,7 +80,7 @@ func main() {
 	processLines := 0
 	lineNum := 0
 	fileNum := 1
-	threshold, err := strconv.Atoi(os.Args[3])
+	threshold, err := strconv.Atoi(os.Args[4])
 	check(err)
 
 	newline2 := byte('\n')
@@ -90,7 +92,9 @@ func main() {
 
 	// create a new buffer.
 	// Only do this once otherwise you will have problems
-	w := gzip.NewWriter(f)
+	w, e := gzip.NewWriterLevel(f, gzip.BestCompression)
+	check(e)
+	// w := gzip.NewWriter(f)
 
 	for {
 		line, err := reader.ReadBytes(newline2)
